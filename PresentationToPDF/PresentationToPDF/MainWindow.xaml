@@ -28,8 +28,6 @@
             <TextBlock TextAlignment="Center" FontFamily="Segoe UI Light" FontSize="14"
                        Foreground="Gray" VerticalAlignment="Center" Padding="5,0,5,0">
                 Presentation to PDF
-                <LineBreak />
-                Created by Shemar C. Lindie
             </TextBlock>
         </StackPanel>
         
