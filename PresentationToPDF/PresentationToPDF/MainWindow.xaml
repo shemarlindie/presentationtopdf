@@ -1,0 +1,116 @@
+﻿<Window x:Class="PresentationToPDF.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:PresentationToPDF"
+        Icon="ppToPdfIcon.png"
+        Title="Presentation to PDF" MinHeight="350" MinWidth="480" Height="450" Width="600">
+    
+    <Window.TaskbarItemInfo>
+        <TaskbarItemInfo />
+    </Window.TaskbarItemInfo>
+    
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>        
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+        
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center"
+                    Grid.Column="0" Grid.Row="0" Grid.ColumnSpan="3" Margin="0,0,0,15">
+            <Image Source="ppToPdfIcon.png" Stretch="Fill" Width="50" />
+            <TextBlock TextAlignment="Center" FontFamily="Segoe UI Light" FontSize="14"
+                       Foreground="Gray" VerticalAlignment="Center" Padding="5,0,5,0">
+                Presentation to PDF
+                <LineBreak />
+                Created by Shemar C. Lindie
+            </TextBlock>
+        </StackPanel>
+        
+        <Label Grid.Row="1" Grid.Column="0" Content="Output folder:"></Label>
+        
+        <TextBox Name="txtDestPath" Grid.Row="1" Grid.Column="1" 
+                 HorizontalAlignment="Stretch" VerticalAlignment="Center" />
+
+        <Button Name="btnBrowse" Grid.Row="1" Grid.Column="2" Content="Browse"
+                Click="btnBrowse_Click" />
+        
+        <ListBox Name="listboxFiles" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+                 BorderThickness="0" Margin="0,5,5,5" HorizontalContentAlignment="Stretch"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled" AllowDrop="True"
+                 DragEnter="listboxFiles_DragEnter" Drop="listboxFiles_Drop" 
+                 KeyDown="listboxFiles_KeyDown" SelectionMode="Multiple">   
+            
+            <local:PptInfo  Name="Drag &amp; drop" 
+                            Path="Drop presentations here..."
+                            Slides="-1"
+                            />
+            
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>                        
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        
+                        <StackPanel Orientation="Horizontal"
+                                    Grid.Column="0" Grid.Row="0">
+                            <Label Content="{Binding Name}"
+                                   FontSize="14" FontWeight="Bold" Foreground="SteelBlue"
+                                   Padding="5,2,5,2" />
+                            <Label Content="{Binding SlideString}" 
+                                   FontSize="14" FontWeight="Bold" Foreground="SteelBlue"
+                                   Padding="0,2,5,2"/>
+                        </StackPanel>
+                        <Label Grid.Column="0" Grid.Row="1" Content="{Binding Path}"
+                               FontSize="10" Padding="5,2,5,2" />
+                        <Label Grid.Column="1" Grid.Row="1" Content="{Binding SizeString}"
+                               FontSize="10" Padding="5,2,5,2" />
+                    </Grid>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+
+
+        <StackPanel Grid.Row="2" Grid.Column="2" Orientation="Vertical" 
+                    VerticalAlignment="Bottom">
+            <Button Name="btnAddFiles" Content="Add files" Margin="0,0,0,5"
+                    Click="btnAddFiles_Click" />
+            <Button Name="btnClear" Content="Clear list" Margin="0,0,0,5"
+                    Click="btnClear_Click" />
+            <Button Name="btnCancel" Content="Cancel" Margin="0,0,0,5"
+                    Click="btnCancel_Click" IsEnabled="False" />
+            <Button Name="btnConvert" Content="Convert" Margin="0,0,0,5"
+                    Click="btnConvert_Click" Background="SteelBlue"
+                    Foreground="White"/>
+        </StackPanel>
+
+        <StackPanel Orientation="Vertical" Grid.Row="3" Grid.Column="0"
+                    Grid.ColumnSpan="3">
+            <Label Name="lblProgress" Content="Add files then click convert." />
+            <ProgressBar Name="progressConversion" Height="5" />
+        </StackPanel>
+    </Grid>
+    
+    
+    <Window.Resources>
+        <Style TargetType="Button">
+            <Setter Property="Padding" Value="5"></Setter>
+        </Style>
+        
+        <Style TargetType="TextBox">
+            <Setter Property="Padding" Value="5"></Setter>
+        </Style>
+    </Window.Resources>
+</Window>
