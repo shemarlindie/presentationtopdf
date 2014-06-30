@@ -11,7 +11,7 @@ namespace PresentationToPDF.Logging {
         static readonly long MaxFileSize = 10 * 1024 * 1024;            // 10 MB - Limit on the log file size
         static readonly string LogDir = Environment.CurrentDirectory;   // Containing directory of the log file           
         static readonly string LogFileName = "PresentationToPDF_ErrorLog.txt";  // Name of the log file
-        static readonly string StringTemplate = "----\r\nPresentation To PDF {0} - by Shemar C. Lindie\r\nTimestamp: {1}\r\nException: {2}\r\nSource object: {3}\r\nMessage: {4}\r\nStack trace: {5}\r\n----\r\n\r\n";
+        static readonly string StringTemplate = "----\r\nPresentation To PDF {0}\r\nTimestamp: {1}\r\nException: {2}\r\nSource object: {3}\r\nMessage: {4}\r\nStack trace: {5}\r\n----\r\n\r\n";
 
         /// <summary>
         /// Initializes the Logger class.
