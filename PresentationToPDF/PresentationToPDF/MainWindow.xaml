@@ -33,7 +33,7 @@
         
         <Label Grid.Row="1" Grid.Column="0" Content="Output folder:"></Label>
         
-        <TextBox Name="txtDestPath" Grid.Row="1" Grid.Column="1" 
+        <TextBox Name="txtDestDir" Grid.Row="1" Grid.Column="1" 
                  HorizontalAlignment="Stretch" VerticalAlignment="Center" />
 
         <Button Name="btnBrowse" Grid.Row="1" Grid.Column="2" Content="Browse"
@@ -43,12 +43,9 @@
                  BorderThickness="0" Margin="0,5,5,5" HorizontalContentAlignment="Stretch"
                  ScrollViewer.HorizontalScrollBarVisibility="Disabled" AllowDrop="True"
                  DragEnter="listboxFiles_DragEnter" Drop="listboxFiles_Drop" 
-                 KeyDown="listboxFiles_KeyDown" SelectionMode="Multiple">   
+                 KeyDown="listboxFiles_KeyDown" SelectionMode="Extended" IsManipulationEnabled="True">  
             
-            <local:PptInfo  Name="Drag &amp; drop" 
-                            Path="Drop presentations here..."
-                            Slides="-1"
-                            />
+            <local:DragDropPlaceholder />
             
             <ListBox.ItemTemplate>
                 <DataTemplate>
@@ -67,7 +64,7 @@
                             <Label Content="{Binding Name}"
                                    FontSize="14" FontWeight="Bold" Foreground="SteelBlue"
                                    Padding="5,2,5,2" />
-                            <Label Content="{Binding SlideString}" 
+                            <Label Content="{Binding PageString}" 
                                    FontSize="14" FontWeight="Bold" Foreground="SteelBlue"
                                    Padding="0,2,5,2"/>
                         </StackPanel>

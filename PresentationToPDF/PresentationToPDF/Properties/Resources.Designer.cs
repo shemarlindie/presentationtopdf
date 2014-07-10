@@ -61,7 +61,7 @@ namespace PresentationToPDF.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to PowerPoint Presentations (.ppt, .pptx) | *.ppt; *.pptx.
+        ///   Looks up a localized string similar to PowerPoint &amp; Word files | *.ppt; *.pptx; *.doc; *.docx.
         /// </summary>
         internal static string AddFilesFilter {
             get {

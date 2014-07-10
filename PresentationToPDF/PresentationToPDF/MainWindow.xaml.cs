@@ -1,20 +1,20 @@
 ﻿using Microsoft.Win32;
 using System;
 using System.ComponentModel;
-using System.Windows;
-using System.Windows.Media.Animation;
-using System.Windows.Controls;
 using System.IO;
-using System.Threading;
-using System.Security.AccessControl;
 using System.Reflection;
-
-using ppToPdf = PresentationToPDF.Properties;
-using PP = Microsoft.Office.Interop.PowerPoint;
 using System.Runtime.InteropServices;
+using System.Security.AccessControl;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media.Animation;
 using System.Windows.Shell;
-using System.Windows.Input;
+
+using PP = Microsoft.Office.Interop.PowerPoint;
+using Word = Microsoft.Office.Interop.Word;
+using ppToPdf = PresentationToPDF.Properties;
 
 /*
  * TODO
@@ -45,7 +45,7 @@ namespace PresentationToPDF {
 
             // log global unhandled exceptions
             Dispatcher.UnhandledException += (s, e) => {
-                Logging.Logger.Log(e.Exception);
+                Logging.Logger.LogAsync(e.Exception);
                 e.Handled = true;
 
                 var mRes = MessageBox.Show("A fatal error has occured. The application will try to restart... Continue?",
@@ -95,7 +95,7 @@ namespace PresentationToPDF {
                 return;
             }
             catch (Exception ex) {
-                Logging.Logger.Log(ex);
+                Logging.Logger.LogAsync(ex);
                 MessageBox.Show(ppToPdf.Resources.UnknownError, "Error",
                     MessageBoxButton.OK, MessageBoxImage.Error, MessageBoxResult.OK);
 
@@ -112,14 +112,14 @@ namespace PresentationToPDF {
             }
 
             if (!conversionRunning) {
-                cancelConversion = new CancellationTokenSource();             
+                cancelConversion = new CancellationTokenSource();
                 conversionRunning = true;
                 btnCancel.IsEnabled = true;
 
                 try {
                     await startConversionAsync(new Progress<ProgressInfo>(UpdateProgress), cancelConversion.Token);
                 }
-                catch(OperationCanceledException) {
+                catch (OperationCanceledException) {
                     ResetProgress();
                     lblProgress.Content = "Conversion canceled.";
                 }
@@ -137,7 +137,7 @@ namespace PresentationToPDF {
             }
         }
 
-        
+
 
         private void btnBrowse_Click(object sender, RoutedEventArgs e) {
             // bring up folder selection dialog
@@ -147,7 +147,7 @@ namespace PresentationToPDF {
 
             // get selected folder from dialog
             if (res == System.Windows.Forms.DialogResult.OK) {
-                txtDestPath.Text = dialogOutput.SelectedPath;
+                txtDestDir.Text = dialogOutput.SelectedPath;
             }
         }
 
@@ -159,7 +159,7 @@ namespace PresentationToPDF {
                 Util.CleanupUnusedMemoryAsync();
             }
         }
-        
+
         private void listboxFiles_DragEnter(object sender, DragEventArgs e) {
             if (e.Data.GetDataPresent(DataFormats.FileDrop)) {
                 e.Effects = DragDropEffects.Move;
@@ -172,7 +172,7 @@ namespace PresentationToPDF {
         private async void listboxFiles_Drop(object sender, DragEventArgs e) {
 
             string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
-            string outDir = txtDestPath.Text;
+            string outDir = txtDestDir.Text;
 
             UIEnabled(false);
 
@@ -192,7 +192,7 @@ namespace PresentationToPDF {
                 return;
             }
             catch (Exception ex) {
-                Logging.Logger.Log(ex);
+                Logging.Logger.LogAsync(ex);
                 MessageBox.Show(ppToPdf.Resources.UnknownError, "Something went wrong",
                     MessageBoxButton.OK, MessageBoxImage.Error, MessageBoxResult.OK);
 
@@ -202,7 +202,7 @@ namespace PresentationToPDF {
                 UIEnabled(true);
             }
         }
-        
+
         private void btnCancel_Click(object sender, RoutedEventArgs e) {
             if (conversionRunning) {
                 TaskbarItemInfo.ProgressState = TaskbarItemProgressState.Indeterminate;
@@ -211,7 +211,7 @@ namespace PresentationToPDF {
                 btnCancel.IsEnabled = false;
             }
         }
-        
+
 
 
 
@@ -220,9 +220,9 @@ namespace PresentationToPDF {
         /// </summary>
         /// <param name="cancel">Cancellation token used to stop the conversion process.</param>
         /// <returns></returns>
-        private async Task startConversionAsync(IProgress<ProgressInfo> onProgressChanged,  CancellationToken cancel) {
+        private async Task startConversionAsync(IProgress<ProgressInfo> onProgressChanged, CancellationToken cancel) {
             UIEnabled(false);
-            
+
             TaskbarItemInfo.ProgressState = TaskbarItemProgressState.Indeterminate;
             lblProgress.Content = "Starting conversion...";
 
@@ -230,16 +230,15 @@ namespace PresentationToPDF {
             progressConversion.Minimum = 0;
             progressConversion.Maximum = listboxFiles.Items.Count;
 
-            string destPath = txtDestPath.Text; // output folder
+            string destDir = txtDestDir.Text; // output folder
             int index = 0;  // current progress index
             PP.Application ppApp = null;
+            Word.Application wordApp = null;
 
             try {
                 await Task.Run(() => {
-                    ppApp = new PP.Application();
-
                     // create the output directory if it does not exist
-                    if (!Directory.Exists(destPath)) {
+                    if (!Directory.Exists(destDir)) {
                         // set file system access rules
                         FileSystemAccessRule rule = new FileSystemAccessRule(
                                                             "Everyone",
@@ -253,36 +252,36 @@ namespace PresentationToPDF {
                         var sec = new DirectorySecurity();
                         sec.ModifyAccessRule(AccessControlModification.Add, rule, out success);
 
-                        Directory.CreateDirectory(destPath, sec); // create directory                    
+                        Directory.CreateDirectory(destDir, sec); // create directory                    
                     }
                 });
             }
-            catch (PathTooLongException ex) {
-                MessageBox.Show(string.Format(ppToPdf.Resources.MsgDirCreationFailed_Path, destPath), "Path too long",
+            catch (PathTooLongException) {
+                MessageBox.Show(string.Format(ppToPdf.Resources.MsgDirCreationFailed_Path, destDir), "Path too long",
                     MessageBoxButton.OK, MessageBoxImage.Error, MessageBoxResult.OK);
                 lblProgress.Content = "Something went wrong.";
                 UIEnabled(true);
 
                 return;
             }
-            catch (IOException ex) {
-                MessageBox.Show(string.Format(ppToPdf.Resources.MsgDirCreationFailed_IO, destPath), "Cannot create folder",
+            catch (IOException) {
+                MessageBox.Show(string.Format(ppToPdf.Resources.MsgDirCreationFailed_IO, destDir), "Cannot create folder",
                     MessageBoxButton.OK, MessageBoxImage.Error, MessageBoxResult.OK);
                 lblProgress.Content = "Something went wrong.";
                 UIEnabled(true);
 
                 return;
             }
-            catch (UnauthorizedAccessException ex) {
-                MessageBox.Show(string.Format(ppToPdf.Resources.MsgDirCreationFailed_Access, destPath), "Access is denied",
+            catch (UnauthorizedAccessException) {
+                MessageBox.Show(string.Format(ppToPdf.Resources.MsgDirCreationFailed_Access, destDir), "Access is denied",
                     MessageBoxButton.OK, MessageBoxImage.Error, MessageBoxResult.OK);
                 lblProgress.Content = "Something went wrong.";
                 UIEnabled(true);
 
                 return;
             }
-            catch (NotSupportedException ex) {
-                MessageBox.Show(string.Format(ppToPdf.Resources.MsgDirCreationFailed_Invalid, destPath), "Invalid output path",
+            catch (NotSupportedException) {
+                MessageBox.Show(string.Format(ppToPdf.Resources.MsgDirCreationFailed_Invalid, destDir), "Invalid output path",
                     MessageBoxButton.OK, MessageBoxImage.Error, MessageBoxResult.OK);
                 lblProgress.Content = "Something went wrong.";
                 UIEnabled(true);
@@ -290,7 +289,7 @@ namespace PresentationToPDF {
                 return;
             }
             catch (Exception ex) {
-                Logging.Logger.Log(ex);
+                Logging.Logger.LogAsync(ex);
                 MessageBox.Show(ppToPdf.Resources.UnknownError, "Something went wrong",
                     MessageBoxButton.OK, MessageBoxImage.Error, MessageBoxResult.OK);
                 lblProgress.Content = "Something went wrong.";
@@ -299,25 +298,34 @@ namespace PresentationToPDF {
                 return;
             }
             finally {
-                
+
             }
 
             // start conversion
-            foreach (PptInfo p in listboxFiles.Items) {
+            foreach (OfficeFileInfo file in listboxFiles.Items) {
                 // update progress
-                onProgressChanged.Report(new ProgressInfo(++index, listboxFiles.Items.Count, Path.GetFileName(p.Path)));
-
-                // build path for converted file
-                string newPath = Path.Combine(new[] { destPath, Path.ChangeExtension(Path.GetFileName(p.Path), "pdf") });
+                onProgressChanged.Report(new ProgressInfo(++index, listboxFiles.Items.Count, Path.GetFileName(file.Path)));
 
                 try {
-                    await ppConvertAsync(ppApp, p, newPath); // convert asynchronously
+                    if (file is PptInfo) {
+                        if (ppApp == null) {
+                            ppApp = await StartPowerPointAsync();
+                        }
+
+                        await ppConvertAsync(ppApp, file as PptInfo, destDir);
+                    }
+                    else if (file is DocInfo) {
+                        if (wordApp == null) {
+                            wordApp = await StartWordAsync();
+                        }
+
+                        await wordConvertAsync(wordApp, file as DocInfo, destDir);
+                    }
                 }
-                catch (COMException ex) {
-                    Console.WriteLine(ex.Message);
-                }
+                // seems to indicate conversion failure but conversion doesn't really fail, so ignore for now
+                catch (COMException) { }
                 catch (Exception ex) {
-                    Logging.Logger.Log(ex);
+                    Logging.Logger.LogAsync(ex);
                     MessageBox.Show(ppToPdf.Resources.UnknownError, "Conversion error",
                         MessageBoxButton.OK, MessageBoxImage.Error, MessageBoxResult.OK);
                     UIEnabled(true);
@@ -329,14 +337,29 @@ namespace PresentationToPDF {
                     cancel.ThrowIfCancellationRequested();
                 }
                 catch (OperationCanceledException) {
-                    ppApp.Quit();
-                    Util.ReleaseComObject(ppApp);
+                    if (ppApp != null) {
+                        ppApp.Quit();
+                        Util.ReleaseComObject(ppApp);
+                    }
+
+                    if (wordApp != null) {
+                        ((Word._Application)wordApp).Quit(Word.WdSaveOptions.wdDoNotSaveChanges);
+                        Util.ReleaseComObject(wordApp);
+                    }
+
                     throw;
                 }
             }
 
-            ppApp.Quit();
-            Util.ReleaseComObject(ppApp);
+            if (ppApp != null) {
+                ppApp.Quit();
+                Util.ReleaseComObject(ppApp);
+            }
+
+            if (wordApp != null) {
+                ((Word._Application)wordApp).Quit(Word.WdSaveOptions.wdDoNotSaveChanges);
+                Util.ReleaseComObject(wordApp);
+            }
 
             lblProgress.Content = "Done!";
         }
@@ -345,19 +368,50 @@ namespace PresentationToPDF {
         /// Converts ppts to PDF documents asynchronously
         /// </summary>
         /// <param name="ppApp">The PowerPoint application</param>
-        /// <param name="p">A PptInfo object to convert to pdf</param>
+        /// <param name="info">A PptInfo object of the file to be converted to pdf</param>
         /// <param name="newPath">Full path of the converted file</param>
-        /// <returns></returns>
-        private Task ppConvertAsync(PP.Application ppApp, PptInfo p, string newPath) {
+        private Task ppConvertAsync(PP.Application ppApp, PptInfo info, string destDir) {
             return Task.Run(() => {
                 // open presentation in PP in the bg
-                PP.Presentation pres = ppApp.Presentations.Open(p.Path, WithWindow: Microsoft.Office.Core.MsoTriState.msoFalse);
+                PP.Presentation pres = ppApp.Presentations.Open(info.Path, WithWindow: Microsoft.Office.Core.MsoTriState.msoFalse);
+
+                // build path for converted file
+                string newPath = Path.Combine(new[] { destDir, Path.ChangeExtension(Path.GetFileName(info.Path), "pdf") });
 
                 // convert to pdf
                 pres.SaveAs(newPath, PP.PpSaveAsFileType.ppSaveAsPDF);
                 pres.Close();
                 Util.ReleaseComObject(pres);
             });
+        }
+
+        /// <summary>
+        /// Converts docs to PDF documents asynchronously
+        /// </summary>
+        /// <param name="ppApp">The Word application</param>
+        /// <param name="info">A DocInfo object of the file to be converted to pdf</param>
+        /// <param name="newPath">Full path of the converted file</param>
+        private Task wordConvertAsync(Word.Application wordApp, DocInfo info, string destDir) {
+            return Task.Run(() => {
+                // open doc in Word in the bg
+                Word.Document doc = wordApp.Documents.Open(info.Path, AddToRecentFiles: false, Visible: false);
+
+                // build path for converted file
+                string newPath = Path.Combine(new[] { destDir, Path.ChangeExtension(Path.GetFileName(info.Path), "pdf") });
+
+                // save as pdf
+                doc.SaveAs2(newPath, Word.WdSaveFormat.wdFormatPDF);
+                ((Word._Document)doc).Close(Word.WdSaveOptions.wdDoNotSaveChanges);
+                Util.ReleaseComObject(doc);
+            });
+        }
+
+        private Task<PP.Application> StartPowerPointAsync() {
+            return Task.Run<PP.Application>(() => new PP.Application());
+        }
+
+        private Task<Word.Application> StartWordAsync() {
+            return Task.Run<Word.Application>(() => new Word.Application());
         }
 
         /// <summary>
@@ -373,37 +427,40 @@ namespace PresentationToPDF {
 
             // add presentations
             foreach (string s in files) {
-                PptInfo pres = null;
+                OfficeFileInfo file = null;
                 await Task.Run(() => {
-                    if (s.Contains(".ppt")) {
-                        try {
-                            pres = new PptInfo(s);
+                    try {
+                        if (s.Contains(".ppt")) {
+                            file = new PptInfo(s);
                         }
-                        catch (PathTooLongException ex) {
-                            ex.Data.Add("Path", Path.GetDirectoryName(s));
-                            throw;
+                        else if (s.Contains(".doc")) {
+                            file = new DocInfo(s);
                         }
-                        catch (UnauthorizedAccessException ex) {
-                            ex.Data.Add("Path", s);
-                            throw;
-                        }
+                    }
+                    catch (PathTooLongException ex) {
+                        ex.Data.Add("Path", s);
+                        throw;
+                    }
+                    catch (UnauthorizedAccessException ex) {
+                        ex.Data.Add("Path", s);
+                        throw;
                     }
                 });
 
-                if (pres != null) {
-                    listboxFiles.Items.Add(pres);
+                if (file != null) {
+                    listboxFiles.Items.Add(file);
                 }
             }
 
             // create path to default output folder
             if (listboxFiles.Items.Count > 0) { // were files added?
                 // if not use default
-                string path = Path.GetDirectoryName((listboxFiles.Items[0] as PptInfo).Path);
-                string dest = Path.Combine(new[] { path, "PDF-Presentations" });
-                txtDestPath.Text = dest;
+                string path = Path.GetDirectoryName((listboxFiles.Items[0] as OfficeFileInfo).Path);
+                string dest = Path.Combine(new[] { path, "PDF-Conversions" });
+                txtDestDir.Text = dest;
 
                 // show listbox file count
-                lblProgress.Content = string.Format("{0} presentation(s).", listboxFiles.Items.Count);
+                lblProgress.Content = string.Format("{0} documents(s).", listboxFiles.Items.Count);
             }
         }
 
@@ -417,7 +474,7 @@ namespace PresentationToPDF {
             TaskbarItemInfo.ProgressValue = (double)prog.CurrentIndex / prog.MaxIndex;
 
             // create animation params
-            Duration dur = new Duration(TimeSpan.FromSeconds(0.5));            
+            Duration dur = new Duration(TimeSpan.FromSeconds(0.5));
             DoubleAnimation ani = new DoubleAnimation(prog.CurrentIndex, dur);
 
             // animate to new progress
@@ -453,7 +510,7 @@ namespace PresentationToPDF {
             btnBrowse.IsEnabled = state;
             btnClear.IsEnabled = state;
             btnConvert.IsEnabled = state;
-            txtDestPath.IsEnabled = state;
+            txtDestDir.IsEnabled = state;
         }
 
         private void listboxFiles_KeyDown(object sender, System.Windows.Input.KeyEventArgs e) {
@@ -469,6 +526,6 @@ namespace PresentationToPDF {
             //        break;
             //}
         }
-        
+
     }
 }
