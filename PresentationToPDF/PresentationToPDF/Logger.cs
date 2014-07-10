@@ -39,23 +39,21 @@ namespace PresentationToPDF.Logging {
         /// Logs the details of an exception.
         /// </summary>
         /// <param name="ex"></param>
-        public static void Log(Exception ex) {
-            Task.Factory.StartNew(() => {
+        public static Task LogAsync(Exception ex) {
+            return Task.Factory.StartNew(() => {
                 try {
                     File.AppendAllText(LogPath, string.Format(StringTemplate, AppInfo.Version, DetailedDateTimeString(),
                         ex.GetType().ToString(), ex.Source, ex.Message, ex.StackTrace), Encoding.UTF8);
 
                     if (!(ex is AggregateException) && ex.InnerException != null) {
-                        Log(ex.InnerException);
+                        LogAsync(ex.InnerException);
                     }
                     else {
                         var aex = ex as AggregateException;
                         if (aex.InnerExceptions != null && aex.InnerExceptions.Count > 0) {
-                            Console.WriteLine("**** InnerExceptions");
                             foreach (Exception e in aex.InnerExceptions) {
-                                Log(e);
+                                LogAsync(e);
                             }
-                            Console.WriteLine("****");
                         }
                     }
                 }
