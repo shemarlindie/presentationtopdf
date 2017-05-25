@@ -1,7 +1,7 @@
 **Project Description**
 A simple ppt / pptx to PDF converter that converts PowerPoint presentations in batch.
 
-![](Home_https://b17d59da903759b551adb392d60e89ee43088d36.googledrive.com/host/0B3-i5Xt15LcdN0ZGMzZ6RmhrMWM/presentation_to_pdf)
+![](https://lh5.googleusercontent.com/fDy47m6epmBIzNZf6tm6iKe9U9OxHGevW6uaTKKQfionlpb1RXHpXB3-s6EvCFksmX0MBC5UYOjgUL0=w3360-h1730-rw)
 
 # Details
 ----
