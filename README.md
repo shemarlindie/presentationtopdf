@@ -1,10 +1,12 @@
-**Project Description**
+![](./logo.png) 
+# Presentation to PDF
+
+## Project Description
+
 A simple ppt / pptx to PDF converter that converts PowerPoint presentations in batch.
 
-![](https://lh5.googleusercontent.com/fDy47m6epmBIzNZf6tm6iKe9U9OxHGevW6uaTKKQfionlpb1RXHpXB3-s6EvCFksmX0MBC5UYOjgUL0=w3360-h1730-rw)
+![](./Screenshots/presentation_to_pdf.png)
 
-# Details
-----
 ## Built with:
 * C#
 * WPF
